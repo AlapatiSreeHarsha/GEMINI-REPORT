@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 
 
 def _rank(name: str) -> tuple:
@@ -23,6 +24,43 @@ def list_available_models(client) -> list[str]:
     if not available:
         raise RuntimeError("This API key has no Gemini models available for generateContent.")
     return sorted(set(available), key=_rank)
+
+
+def generate_content_resilient(client, model: str, *, contents, config=None):
+    """Retry transient Gemini overloads, then try other exposed models."""
+    available = list_available_models(client)
+    candidates = [model, *(name for name in available if name != model)]
+    transient_codes = {429, 500, 502, 503, 504}
+    failures = []
+
+    for candidate in candidates:
+        for attempt in range(3):
+            try:
+                return client.models.generate_content(
+                    model=candidate, contents=contents, config=config
+                )
+            except Exception as exc:
+                status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+                message = str(exc).lower()
+                try:
+                    status_number = int(status)
+                except (TypeError, ValueError):
+                    status_number = None
+                transient = status_number in transient_codes or any(
+                    marker in message
+                    for marker in ("503", "unavailable", "overloaded", "429", "rate limit", "500", "502", "504")
+                )
+                failures.append(f"{candidate}: {status or type(exc).__name__}")
+                if not transient:
+                    raise
+                if attempt < 2:
+                    time.sleep(2 ** attempt)
+
+    details = "; ".join(failures[-min(len(failures), 8):])
+    raise RuntimeError(
+        "Gemini is temporarily unavailable across the models exposed to this API key. "
+        f"Please retry shortly. Details: {details}"
+    )
 
 
 def select_available_model(client) -> str:

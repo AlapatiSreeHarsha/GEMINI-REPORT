@@ -7,7 +7,7 @@ from code_analysis.analyzer import inspect_code
 from handwriting.cache import load_or_extract
 from analysis.similarity import compare_students
 from utils.hashing import sha256_file
-from ai.model_selector import select_available_model
+from ai.model_selector import select_available_model, generate_content_resilient
 
 def _cached_code(path: Path, student_id: str, storage: Path) -> dict:
     digest = sha256_file(path)
@@ -31,7 +31,7 @@ def _analysis(client, model: str, student_id: str, code: list[dict], handwriting
                 "required_count": required_count, "code": [{k:v for k,v in f.items() if k != "source"} | {"source": f["source"]} for f in code],
                 "handwriting": handwriting}
     prompt = analysis_prompt + f"\nPrompt version: {version}\n" + json.dumps(evidence, ensure_ascii=False)
-    response = client.models.generate_content(model=model, contents=prompt, config={"response_mime_type":"application/json"})
+    response = generate_content_resilient(client, model, contents=prompt, config={"response_mime_type":"application/json"})
     result = json.loads(response.text); result["student_id"] = student_id; result["prompt_version"] = version
     return result
 
