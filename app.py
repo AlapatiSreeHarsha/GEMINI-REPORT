@@ -21,9 +21,9 @@ tab_process, tab_regen = st.tabs(["Process a ZIP", "Regenerate from evidence"])
 with tab_process:
     uploaded = st.file_uploader("Student submissions ZIP", type=["zip"])
     api_key = st.text_input("Gemini API key", value=os.getenv("GEMINI_API_KEY", ""), type="password")
-    version = st.text_input("Analysis prompt version", value="2.0", key="analysis_version_v2")
-    st.caption("Submitted totals are counted from the ZIP. Required and extra counts are left unspecified unless assignment evidence identifies them.")
-    prompt = st.text_area("Analysis prompt", value=ANALYSIS_PROMPT, height=260, key="analysis_prompt_v2")
+    version = st.text_input("Analysis prompt version", value="3.0", key="analysis_version_v3")
+    st.caption("Submitted totals are counted from the ZIP. Gemini awards marks out of 100 from the five review dimensions; the letter grade follows fixed score bands.")
+    prompt = st.text_area("Analysis prompt", value=ANALYSIS_PROMPT, height=260, key="analysis_prompt_v3")
 
     if st.button("Generate reports", type="primary", disabled=uploaded is None):
         with tempfile.TemporaryDirectory(prefix="lab-analyzer-") as tmp:
@@ -73,8 +73,8 @@ with tab_regen:
     evidence_files = st.file_uploader("Handwriting evidence JSON", type=["json"], accept_multiple_files=True, key="evidence")
     regen_zip = st.file_uploader("Matching student ZIP", type=["zip"], key="regen_zip")
     regen_key = st.text_input("Gemini API key", value=os.getenv("GEMINI_API_KEY", ""), type="password", key="regen_key")
-    regen_version = st.text_input("New analysis prompt version", value="2.0", key="regen_version_v2")
-    regen_prompt = st.text_area("Updated analysis prompt", value=ANALYSIS_PROMPT, height=260, key="regen_prompt_v2")
+    regen_version = st.text_input("New analysis prompt version", value="3.0", key="regen_version_v3")
+    regen_prompt = st.text_area("Updated analysis prompt", value=ANALYSIS_PROMPT, height=260, key="regen_prompt_v3")
 
     if evidence_files and regen_zip and st.button("Regenerate reports"):
         cached = {

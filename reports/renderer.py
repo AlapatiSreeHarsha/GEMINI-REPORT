@@ -25,16 +25,24 @@ def _list(items: list, dot: str = "teal") -> str:
     if not items: items = ["No specific finding was recorded for this dimension."]
     return "<ul>" + "".join(f'<li><span class="dot {dot}"></span><span>{_text(item)}</span></li>' for item in items) + "</ul>"
 
+def _grade(marks) -> str:
+    try:
+        score = float(marks)
+    except (TypeError, ValueError):
+        return "—"
+    if not 0 <= score <= 100:
+        return "—"
+    return "A" if score >= 90 else "B" if score >= 80 else "C" if score >= 70 else "D" if score >= 60 else "F"
+
 def render_report(data: dict) -> str:
     sid = escape(str(data.get("student_id", "Student")))
     dims = "".join(f'<section class="dim"><h2>{title}<span class="tag">{tag}</span></h2>{_list(_items(data.get(key)), color)}</section>' for key, title, tag, color in DIMENSIONS)
     submitted = data.get("submitted_count", "—")
-    required = data.get("required_count")
-    extras = data.get("extra_count")
+    marks = data.get("marks_awarded")
     explanations = data.get("explanation_count", "—")
-    required = "Not specified" if required is None else required
-    extras = "Not determined" if extras is None else extras
-    facts = [(submitted, "Programs submitted"), (required, "Required"), (extras, "Self-initiated extras"), (explanations, "Code explanations written")]
+    marks_display = f"{float(marks):g}/100" if isinstance(marks, (int, float)) and 0 <= marks <= 100 else "—"
+    grade = _grade(marks)
+    facts = [(submitted, "Programs submitted"), (marks_display, "Marks awarded"), (grade, "Grade"), (explanations, "Code explanations written")]
     fact_html = "".join(f'<div class="fact"><span class="n">{escape(str(n))}</span><span class="l">{label}</span></div>' for n, label in facts)
     dbl = _items(data.get("double_check")); support = _items(data.get("reinforce_basics")); stretch = _items(data.get("room_to_grow"))
     course = escape(str(data.get("course", "C Programming Lab"))); week = escape(str(data.get("week", "Week 4"))); topic = escape(str(data.get("topic", "Functions & Recursion")))
@@ -48,4 +56,4 @@ def render_report(data: dict) -> str:
 <h2 class="factshead">Submission at a glance</h2><div class="factbar">{fact_html}</div>{dims}
 <section class="authcard"><h2>Anything worth double-checking in person? <span class="tag">Not a score</span></h2>{authenticity}</section>
 <section class="lenses"><div class="lens"><h3>If reinforcing basics</h3>{support_html}</div><div class="lens stretch"><h3>If looking for room to grow</h3>{stretch_html}</div></section>
-<div class="disclaimer">Based only on the code and notebook submitted. Attendance, effort, and how this student comes across in class are things only you can see — the decision either way is yours.</div><div class="footline"><span>{escape(str(data.get("section", "")))} · {week}</span><span>Not a grade · advisory only</span></div></main></body></html>'''
+<div class="disclaimer">Marks reflect only the submitted code and notebook evidence. Attendance, effort, and how this student comes across in class are things only you can see — review the suggested grade in that context.</div><div class="footline"><span>{escape(str(data.get("section", "")))} · {week}</span><span>AI-assisted grade · review recommended</span></div></main></body></html>'''
